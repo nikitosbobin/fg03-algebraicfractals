@@ -28,13 +28,16 @@ function drawFractal() {
     for (var i = 0; i < canvas.width; ++i)
         for (var j = 0; j < canvas.height; ++j) {
             var p = getComplexPoint(i, j);
-            var attr = getAttraction(p, iterations);
-            switch (drawingType) {
+            //var attr = getAttraction(p, iterations);
+            var mandelbrot = getMandelbrotIterations(p.x, p.y);
+            //console.log(mandelbrot);
+            levelDrawing(mandelbrot, i, j, imageData);
+            /*switch (drawingType) {
                 case 0: classicDrawing(i, j, attr.root, imageData); break;
                 case 1: levelDrawing(attr.count, i, j, imageData); break;
                 case 2: zebraDrawing(attr.count, i, j, imageData); break;
                 case 3: hybridDrawing(attr.count, attr.root, i, j, imageData); break;
-            }
+            }*/
         }
     ctx.putImageData(imageData, 0, 0);
 }
@@ -149,7 +152,7 @@ function unzoom() {
     
 }
 
-var roots = [
+var NewtonPoolRoots = [
     { x: 1,                    y: 0},
     { x: -Math.cos(Math.PI/3), y: Math.sin(Math.PI/3) },
     { x: -Math.cos(Math.PI/3), y: -Math.sin(Math.PI/3) }
@@ -157,12 +160,25 @@ var roots = [
 
 function getAttraction(point, n) {
     for (var i = 0 ; i < n; ++i) {
-        for (var r = 0; r < roots.length; ++r)
-            if (isPointInSurrounding(point.x, point.y, roots[r])) 
+        for (var r = 0; r < NewtonPoolRoots.length; ++r)
+            if (isPointInSurrounding(point.x, point.y, NewtonPoolRoots[r])) 
                 return { root: r, count: i + 1};
         point = getNextRealPoint(point);
     }
     return { root: 0, count: 0 };
+}
+
+function getMandelbrotIterations(x, y) {
+    var startX = x;
+    var startY = y;
+    var recursion = function(x, y, degree) {
+        if (degree > iterations) return 0;
+        if (x * x + y * y > 4) return degree;
+        var newX = x * x - y * y + startX;
+        var newY = 2 * x * y + startY;
+        return recursion(newX, newY, degree + 1);
+    };
+    return recursion(x, y, 0);
 }
 
 function getNextRealPoint(point) {
