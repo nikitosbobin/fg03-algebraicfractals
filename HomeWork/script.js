@@ -29,9 +29,13 @@ function drawFractal() {
         for (var j = 0; j < canvas.height; ++j) {
             var p = getComplexPoint(i, j);
             //var attr = getAttraction(p, iterations);
-            var mandelbrot = getMandelbrotIterations(p.x, p.y);
+            //var mandelbrot = getMandelbrotIterations(p.x, p.y);
+            var jyulia = getJyuliaIterations(p.x, p.y,-0.12, 0.74);
+            zebraDrawing(jyulia, i, j, imageData);
+            //classicDrawing( {x: i, y: j, root: attr.root, imageData: imageData });
+            //classicDrawing( {x: i, y: j, count: mandelbrot, imageData: imageData });
             //console.log(mandelbrot);
-            levelDrawing(mandelbrot, i, j, imageData);
+            //levelDrawing(jyulia, i, j, imageData);
             /*switch (drawingType) {
                 case 0: classicDrawing(i, j, attr.root, imageData); break;
                 case 1: levelDrawing(attr.count, i, j, imageData); break;
@@ -40,6 +44,21 @@ function drawFractal() {
             }*/
         }
     ctx.putImageData(imageData, 0, 0);
+}
+
+function classicDrawing(dataProvider) {
+    var pixel = { r: 0, g: 0, b: 0, a: 255 };
+    if (dataProvider.root || dataProvider.root == 0) {
+        switch (dataProvider.root) {
+            case 0: pixel = { r: 255, g: 0,   b: 0,   a: 255 }; break;
+            case 1: pixel = { r: 0,   g: 255, b: 0,   a: 255 }; break;
+            case 2: pixel = { r: 0,   g: 0,   b: 255, a: 255 }; break;
+        }
+    } else if (dataProvider.count) {
+        var color = dataProvider.count == 0 ? 0 : 255;
+        pixel = { r: color, g: color, b: color, a: 255 }
+    }
+    fillPoint(dataProvider.imageData, dataProvider.x, dataProvider.y, pixel);
 }
 
 function hybridDrawing(n, root, x, y, imageData) {
@@ -66,16 +85,6 @@ function zebraDrawing(n, x, y, imageData) {
 function levelDrawing(n, x, y, imageData) {
     var brightness = iterations > 1 ? 255*n/(iterations - 1) : 255;
     fillPoint(imageData, x, y, { r: brightness, g: brightness, b: brightness, a: 255 });
-}
-
-function classicDrawing(x, y, root, imageData) {
-    var pixel;
-    switch (root) {
-        case 0: pixel = { r: 255, g: 0,   b: 0,   a: 255 }; break;
-        case 1: pixel = { r: 0,   g: 255, b: 0,   a: 255 }; break;
-        case 2: pixel = { r: 0,   g: 0,   b: 255, a: 255 }; break;
-    }
-    fillPoint(imageData, x, y, pixel);
 }
 
 function fillPoint(imageData, x, y, pixel) {
@@ -157,6 +166,17 @@ var NewtonPoolRoots = [
     { x: -Math.cos(Math.PI/3), y: Math.sin(Math.PI/3) },
     { x: -Math.cos(Math.PI/3), y: -Math.sin(Math.PI/3) }
 ];
+
+function getJyuliaIterations(x, y, cx, cy) {
+    var recursion = function(x, y, degree) {
+        if (degree > iterations) return 0;
+        if (x * x + y * y > 4) return degree;
+        var newX = x * x - y * y + cx;
+        var newY = 2 * x * y + cy;
+        return recursion(newX, newY, degree + 1);
+    };
+    return recursion(x, y, 0);
+}
 
 function getAttraction(point, n) {
     for (var i = 0 ; i < n; ++i) {

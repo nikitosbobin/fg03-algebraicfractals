@@ -5,12 +5,18 @@
     <meta http-equiv="Cache-Control" content="no-cache"/>
     <title>Algebraic fractal</title>
     <script src="script.js"></script>
+    <script src="ColorTypes.js"></script>
 </head>
 <body onload="load()">
     <canvas height='600' width='600' id='mCanvas'></canvas></br>
-    Iterations:<input type="number" value="10" onchange="onItChange(this)"></br>
+    Iterations:<input type="number" value="10" onchange="onItChange(this)">
     <input type="button" value="Unzoom" onclick="unzoom()">
-    <select name="drawing_type" size="1" id="color" onchange="drawingTypeChange(this)">
+    <select size="1" onchange="drawingTypeChange(this)">
+        <option value="0">Newton pool</option>
+        <option value="1">The Mandelbrot set</option>
+        <option value="2">Julia set</option>
+    </select>
+    <select size="1" id="drawing_type" onchange="drawingTypeChange(this)">
         <option value="0">Classic</option>
         <option value="1">Levels</option>
         <option value="2">Zebra</option>
