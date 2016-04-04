@@ -1,152 +1,155 @@
-var canvas;
-var ctx;
-var leftP = -2;
-var rightP = 2;
-var topP = 2;
-var bottomP = -2;
-var drawingType = 0;
-var iterations = 10;
+var env;
+
+function Environment() {
+    this.canvas;
+    this.ctx;
+    this.colorsField;
+    this.leftP = -2;
+    this.rightP = 2;
+    this.topP = 2;
+    this.bottomP = -2;
+}
 
 function getComplexPoint(i, j) {
-    return { x: i*(rightP - leftP)/(canvas.width - 1) + leftP,
-             y: j*(bottomP - topP)/(canvas.height - 1) + topP };
+    return { x: i*(env.rightP - env.leftP)/(env.canvas.width - 1) + env.leftP,
+             y: j*(env.bottomP - env.topP)/(env.canvas.height - 1) + env.topP };
 }
 
 function load() {
-    canvas = document.getElementById("mCanvas");
-    ctx = canvas.getContext('2d');
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    canvas.onmousedown = mouseDown;
-    canvas.onmouseup = mouseUp;
-    canvas.onmousemove = mouseMove;
-    drawFractal();
+    env = new Environment();
+    env.canvas = document.getElementById("mCanvas");
+    env.ctx = env.canvas.getContext('2d');
+    env.ctx.fillStyle = "#000";
+    env.ctx.fillRect(0, 0, env.canvas.width, env.canvas.height);
+    var mouseHandler = new MouseHander();
+    env.canvas.onmousedown = mouseHandler.mouseDown;
+    env.canvas.onmouseup = mouseHandler.mouseUp;
+    env.canvas.onmousemove = mouseHandler.mouseMove;
+    env.colorsField = document.getElementById("drawing_type");
+    drawFractal(env.ctx);
+}
+
+function removeHybridColor(colorsFieldObj) {
+    colorsFieldObj.remove(3);
+}
+
+function appendHybridColor(colorsFieldObj) {
+    colorsFieldObj.appendChild(new Option("Hybrid", 3, false, false));
+}
+
+function myParseInteger(source, defaultValue) {
+    var result = parseInt(source);
+    if (!!result) return result;
+    return defaultValue;
+}
+
+function myParseFloat(source, defaultValue) {
+    var result = parseFloat(source);
+    if (!!result) return result;
+    return defaultValue;
 }
 
 function drawFractal() {
-    var imageData = ctx.createImageData(canvas.width, canvas.height);
-    for (var i = 0; i < canvas.width; ++i)
-        for (var j = 0; j < canvas.height; ++j) {
+    var context = env.ctx;
+    var algorithm = myParseInteger(document.getElementById("algorithm_type").value, 0);
+    var drawingType = myParseInteger(document.getElementById("drawing_type").value, 0);
+    var iterations = myParseInteger(document.getElementById("iterations_field").value, 10);
+    var juliaRealConstant = myParseFloat(document.getElementById("julia_real").value, -0.12);
+    var juliaImagineConstant = myParseFloat(document.getElementById("julia_imagine").value, 0.74);
+    var imageData = context.createImageData(env.canvas.width, env.canvas.height);
+    for (var i = 0; i < env.canvas.width; ++i)
+        for (var j = 0; j < env.canvas.height; ++j) {
             var p = getComplexPoint(i, j);
-            //var attr = getAttraction(p, iterations);
-            //var mandelbrot = getMandelbrotIterations(p.x, p.y);
-            var jyulia = getJyuliaIterations(p.x, p.y,-0.12, 0.74);
-            zebraDrawing(jyulia, i, j, imageData);
-            //classicDrawing( {x: i, y: j, root: attr.root, imageData: imageData });
-            //classicDrawing( {x: i, y: j, count: mandelbrot, imageData: imageData });
-            //console.log(mandelbrot);
-            //levelDrawing(jyulia, i, j, imageData);
-            /*switch (drawingType) {
-                case 0: classicDrawing(i, j, attr.root, imageData); break;
-                case 1: levelDrawing(attr.count, i, j, imageData); break;
+            var attr;
+            switch (algorithm) {
+                case 0: attr = getAttraction(p, iterations);
+                    break;
+                case 1: attr = getMandelbrotIterations(p.x, p.y, iterations);
+                    break;
+                case 2: attr = getJyuliaIterations(p.x, p.y, juliaRealConstant, juliaImagineConstant, iterations); 
+                    break;
+            }
+            switch (drawingType) {
+                case 0: 
+                    if (algorithm == 0)
+                        classicDrawing1(i, j, attr.root, imageData);
+                    else
+                        classicDrawing2(i, j, attr.count, imageData);
+                    break;
+                case 1: levelDrawing(attr.count, iterations, i, j, imageData); break;
                 case 2: zebraDrawing(attr.count, i, j, imageData); break;
-                case 3: hybridDrawing(attr.count, attr.root, i, j, imageData); break;
-            }*/
+                case 3: hybridDrawing(attr.count, iterations, attr.root, i, j, imageData); break;
+            }
         }
-    ctx.putImageData(imageData, 0, 0);
+    context.putImageData(imageData, 0, 0);
 }
 
-function classicDrawing(dataProvider) {
-    var pixel = { r: 0, g: 0, b: 0, a: 255 };
-    if (dataProvider.root || dataProvider.root == 0) {
-        switch (dataProvider.root) {
-            case 0: pixel = { r: 255, g: 0,   b: 0,   a: 255 }; break;
-            case 1: pixel = { r: 0,   g: 255, b: 0,   a: 255 }; break;
-            case 2: pixel = { r: 0,   g: 0,   b: 255, a: 255 }; break;
-        }
-    } else if (dataProvider.count) {
-        var color = dataProvider.count == 0 ? 0 : 255;
-        pixel = { r: color, g: color, b: color, a: 255 }
-    }
-    fillPoint(dataProvider.imageData, dataProvider.x, dataProvider.y, pixel);
-}
-
-function hybridDrawing(n, root, x, y, imageData) {
-    var pixel;
-    var brightness = iterations > 1 ? 255*n/(iterations - 1) : 255;
-    switch (root) {
-        case 0: pixel = { r: brightness, g: 0,   b: 0,   a: 255 }; break;
-        case 1: pixel = { r: 0,   g: brightness, b: 0,   a: 255 }; break;
-        case 2: pixel = { r: 0,   g: 0,   b: brightness, a: 255 }; break;
-    }
-    fillPoint(imageData, x, y, pixel);
-}
-
-function onItChange(obj) {
-    iterations = obj.value;
-    drawFractal();
-}
-
-function zebraDrawing(n, x, y, imageData) {
-    var colors = n % 2 == 0 ? 0 : 255;
-    fillPoint(imageData, x, y, { r: colors, g: colors, b: colors, a: 255 });
-}
-
-function levelDrawing(n, x, y, imageData) {
-    var brightness = iterations > 1 ? 255*n/(iterations - 1) : 255;
-    fillPoint(imageData, x, y, { r: brightness, g: brightness, b: brightness, a: 255 });
+function algorithmChange(obj) {
+    algorithm = parseInt(obj.value);
+    if (algorithm == 0) appendHybridColor(env.colorsField); 
+    else removeHybridColor(env.colorsField);
 }
 
 function fillPoint(imageData, x, y, pixel) {
-    imageData.data[4 * (x + canvas.width * y) + 0] = pixel.r;
-    imageData.data[4 * (x + canvas.width * y) + 1] = pixel.g; 
-    imageData.data[4 * (x + canvas.width * y) + 2] = pixel.b;
-    imageData.data[4 * (x + canvas.width * y) + 3] = pixel.a;
+    imageData.data[4 * (x + env.canvas.width * y) + 0] = pixel.r;
+    imageData.data[4 * (x + env.canvas.width * y) + 1] = pixel.g; 
+    imageData.data[4 * (x + env.canvas.width * y) + 2] = pixel.b;
+    imageData.data[4 * (x + env.canvas.width * y) + 3] = pixel.a;
 }
 
-var isMouseDown = false;
-var startPoint = null;
-var endPoint = null;
-var lastData = null;
-var statesStack = [];
-function mouseDown(e) {
-    lastData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    isMouseDown = true;
-    startPoint = { x: e.pageX - 8, y: e.pageY - 8 };
+function MouseHander() {
+    this.isMouseDown = false;
+    this.startPoint = null;
+    this.endPoint = null;
+    this.lastData = null;
+    this.statesStack = [];
 }
 
-function mouseMove(e) {
-    if (isMouseDown) {
-        var x = e.pageX - 8;
-        var y = e.pageY - 8;
-        ctx.strokeStyle = "#000";
-        ctx.strokeWidth = 2;
-        var dx = Math.abs(x - startPoint.x);
-        var dy = Math.abs(y - startPoint.y);
-        var summaryDelta = 0;
-        if (dx > dy) {
-            summaryDelta = dx;
-            endPoint = { x: startPoint.x + dx, y: startPoint.y + dx};
-        }else {
-            summaryDelta = dy;
-            endPoint = { x: startPoint.x + dy, y: startPoint.y + dy};
+MouseHander.prototype = {
+    mouseDown: function (e) {
+        this.lastData = env.ctx.getImageData(0, 0, env.canvas.width, env.canvas.height);
+        this.isMouseDown = true;
+        this.startPoint = { x: e.pageX - 8, y: e.pageY - 8 };
+    },
+    mouseMove: function (e) {
+        if (this.isMouseDown) {
+            var x = e.pageX - 8;
+            var y = e.pageY - 8;
+            env.ctx.strokeStyle = "#000";
+            env.ctx.strokeWidth = 2;
+            var dx = Math.abs(x - this.startPoint.x);
+            var dy = Math.abs(y - this.startPoint.y);
+            var summaryDelta = 0;
+            if (dx > dy) {
+                summaryDelta = dx;
+                this.endPoint = { x: this.startPoint.x + dx, y: this.startPoint.y + dx};
+            }else {
+                summaryDelta = dy;
+                this.endPoint = { x: this.startPoint.x + dy, y: this.startPoint.y + dy};
+            }
+            env.ctx.putImageData(this.lastData, 0, 0);
+            env.ctx.strokeRect(this.startPoint.x, this.startPoint.y, summaryDelta, summaryDelta);
         }
-        ctx.putImageData(lastData, 0, 0);
-        ctx.strokeRect(startPoint.x, startPoint.y, summaryDelta, summaryDelta);
+    },
+    mouseUp: function (e) {
+        this.isMouseDown = false;
+        var r = this.endPoint.x;
+        var b = this.endPoint.y;
+        var l = this.startPoint.x;
+        var t = this.startPoint.y;
+        var tmp1 = getComplexPoint(l, t);
+        var tmp2 = getComplexPoint(r, b);
+        if(!this.statesStack)
+            this.statesStack = [];
+        this.statesStack.push({ l: env.leftP, r: env.rightP, t: env.topP, b: env.bottomP });
+        env.leftP = tmp1.x;
+        env.topP = tmp1.y;
+        env.rightP = tmp2.x;
+        env.bottomP = tmp2.y;
+        drawFractal();
+        this.startPoint = null;
+        this.lastData = null;
     }
-}
-
-function drawingTypeChange(obj) {
-    drawingType = parseInt(obj.value);
-    drawFractal();
-}
-
-function mouseUp(e) {
-    isMouseDown = false;
-    var r = endPoint.x;
-    var b = endPoint.y;
-    var l = startPoint.x;
-    var t = startPoint.y;
-    var tmp1 = getComplexPoint(l, t);
-    var tmp2 = getComplexPoint(r, b);
-    statesStack.push({ l: leftP, r: rightP, t: topP, b: bottomP });
-    leftP = tmp1.x;
-    topP = tmp1.y;
-    rightP = tmp2.x;
-    bottomP = tmp2.y;
-    drawFractal();
-    startPoint = null;
-    lastData = null;
 }
 
 function unzoom() {
@@ -158,7 +161,6 @@ function unzoom() {
         bottomP = tmp.b;
         drawFractal();
     }
-    
 }
 
 var NewtonPoolRoots = [
@@ -166,40 +168,6 @@ var NewtonPoolRoots = [
     { x: -Math.cos(Math.PI/3), y: Math.sin(Math.PI/3) },
     { x: -Math.cos(Math.PI/3), y: -Math.sin(Math.PI/3) }
 ];
-
-function getJyuliaIterations(x, y, cx, cy) {
-    var recursion = function(x, y, degree) {
-        if (degree > iterations) return 0;
-        if (x * x + y * y > 4) return degree;
-        var newX = x * x - y * y + cx;
-        var newY = 2 * x * y + cy;
-        return recursion(newX, newY, degree + 1);
-    };
-    return recursion(x, y, 0);
-}
-
-function getAttraction(point, n) {
-    for (var i = 0 ; i < n; ++i) {
-        for (var r = 0; r < NewtonPoolRoots.length; ++r)
-            if (isPointInSurrounding(point.x, point.y, NewtonPoolRoots[r])) 
-                return { root: r, count: i + 1};
-        point = getNextRealPoint(point);
-    }
-    return { root: 0, count: 0 };
-}
-
-function getMandelbrotIterations(x, y) {
-    var startX = x;
-    var startY = y;
-    var recursion = function(x, y, degree) {
-        if (degree > iterations) return 0;
-        if (x * x + y * y > 4) return degree;
-        var newX = x * x - y * y + startX;
-        var newY = 2 * x * y + startY;
-        return recursion(newX, newY, degree + 1);
-    };
-    return recursion(x, y, 0);
-}
 
 function getNextRealPoint(point) {
     var a = point.x * point.x;

@@ -6,21 +6,32 @@
     <title>Algebraic fractal</title>
     <script src="script.js"></script>
     <script src="ColorTypes.js"></script>
+    <script src="Algorithms.js"></script>
 </head>
 <body onload="load()">
-    <canvas height='600' width='600' id='mCanvas'></canvas></br>
-    Iterations:<input type="number" value="10" onchange="onItChange(this)">
-    <input type="button" value="Unzoom" onclick="unzoom()">
-    <select size="1" onchange="drawingTypeChange(this)">
-        <option value="0">Newton pool</option>
-        <option value="1">The Mandelbrot set</option>
-        <option value="2">Julia set</option>
-    </select>
-    <select size="1" id="drawing_type" onchange="drawingTypeChange(this)">
-        <option value="0">Classic</option>
-        <option value="1">Levels</option>
-        <option value="2">Zebra</option>
-        <option value="3">Hybrid</option>
-    </select>
+    <div>
+        <canvas height='600' width='600' id='mCanvas'></canvas>
+    </div>
+    <div>
+        <input type="button" value="Unzoom" onclick="unzoom()">
+        Iterations:<input type="number" value="10" style="width: 40px" id="iterations_field"></br>
+        <select size="1" id="algorithm_type" onchange="algorithmChange(this)">
+            <option value="0">Newton pool</option>
+            <option value="1">The Mandelbrot set</option>
+            <option value="2">Julia set</option>
+        </select>
+        <select size="1" id="drawing_type">
+            <option value="0">Classic</option>
+            <option value="1">Levels</option>
+            <option value="2">Zebra</option>
+            <option value="3">Hybrid</option>
+        </select>
+        <div id="julia_constant">
+            JuliaConstant: 
+            <input type="text" id="julia_real" value="-0.12" style="width: 40px"> + i 
+            <input type="text" id="julia_imagine" value="0.74" style="width: 40px">
+        </div>
+        <input type="button" value="Generate" onclick="drawFractal()">
+    </div>
 </body>
 </html>
